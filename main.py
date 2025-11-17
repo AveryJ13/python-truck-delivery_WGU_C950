@@ -19,11 +19,11 @@ packages_raw = read_csv("csv/package.csv")
 
 # trucks are manually loaded with the proper package groupings, the hard coded string is the starting hub
 truck1 = Truck(18, 0.0, "4001 South 700 East", datetime.timedelta(hours=8),
-               [1, 13, 14, 15, 16, 20, 29, 30, 31, 34, 37, 40])
-truck2 = Truck(18, 0.0, "4001 South 700 East", datetime.timedelta(hours=11),
-               [3, 6, 12, 17, 18, 19, 21, 22, 23, 24, 26, 27, 35, 36, 38, 39])
+               [1,13,14,15,16,19,20,27,29,30,31,34,37,40])
+truck2 = Truck(18, 0.0, "4001 South 700 East", datetime.timedelta(hours=10, minutes=20),
+               [2,3,4,5,9,18,26,28,32,35,36,38])
 truck3 = Truck(18, 0.0, "4001 South 700 East", datetime.timedelta(hours=9, minutes=5),
-               [2, 4, 5, 6, 7, 8, 9, 10, 11, 25, 28, 32, 33])
+               [6,7,8,10,11,12,17,21,22,23,24,25,33,39])
 
 # custom hashtable is filled in with the contents of the packages
 def import_packages(path, table):
@@ -58,7 +58,55 @@ def run_route(truck):
     pending = [table.search(pid) for pid in truck.packages]
     truck.packages.clear()
 
-    # loops through pending packages. ends when pending is empty. Once the package is delivered it is removed from the loop
+    # priority queue is to ensure that all packages are delivered before 10:30 in these packageIDs
+    priority_queue = {1, 13, 14, 16, 20, 25, 29, 30, 31, 34, 37, 40}
+    first_pkg = None
+    priority = []
+    normal = []
+
+    # 15 has an earlier deadline of 9:00 and is therefore delivered first
+    for p in pending:
+        if p.ID == 15:
+            first_pkg = p
+        elif p.ID in priority_queue:
+            priority.append(p)
+        else:
+            normal.append(p)
+
+    # first package delivered
+    if first_pkg:
+        d = lookup_distance(locate_address(truck.location),
+                            locate_address(first_pkg.street))
+
+        truck.miles += d
+        truck.location = first_pkg.street
+        truck.time += datetime.timedelta(hours=d / 18)
+        first_pkg.delivery = truck.time
+        first_pkg.departure = truck.departure
+        truck.packages.append(first_pkg.ID)
+
+    # priority packages delivered with nearest neighbor
+    while priority:
+        best = None
+        best_dist = float("inf")
+        for pkg in priority:
+            d = lookup_distance(locate_address(truck.location),
+                                locate_address(pkg.street))
+            if d < best_dist:
+                best_dist = d
+                best = pkg
+
+        truck.packages.append(best.ID)
+        priority.remove(best)
+        truck.miles += best_dist
+        truck.location = best.street
+        truck.time += datetime.timedelta(hours=best_dist / 18)
+        best.delivery = truck.time
+        best.departure = truck.departure
+
+    pending = normal
+
+    # loops through remaining pending packages. ends when pending is empty.
     while pending:
         best = None
         best_dist = float("inf")
