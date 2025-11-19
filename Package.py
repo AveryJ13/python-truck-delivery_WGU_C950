@@ -14,6 +14,7 @@ class Package:
         self.status = status
         self.departure = departure
         self.delivery = delivery
+        self.truck = None
 
     def __str__(self):
         return ("ID: %s, %-20s, %s, %s,%s, Deadline: %s,%s,%s,Departure Time: %s,Delivery Time: %s" %
@@ -28,6 +29,9 @@ class Package:
             self.status = "Out for delivery"
         else:
             self.status = "Delivered"
+        if self.ID in [6, 25, 28, 32]:
+            if timeChange < datetime.timedelta(hours=9, minutes=5):
+                self.status = "Package has yet to arrive at the hub"
         if self.ID == 9:  # will change the address for package 9 after the alloted time
             if timeChange > datetime.timedelta(hours=10, minutes=20):
                 self.street = "410 S State St"

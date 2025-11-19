@@ -34,6 +34,7 @@ def import_packages(path, table):
             pid = int(r[0])
             pkg = Package(pid, r[1], r[2], r[3], r[4], r[5], r[6], r[7],
                           "HUB", None, None)
+            pkg.truck = None
             table.insert(pid, pkg)
 
 # helper function to return the correct address for comparison in the algorithm later
@@ -59,13 +60,19 @@ def run_route(truck):
     truck.packages.clear()
 
     # priority queue is to ensure that all packages are delivered before 10:30 in these packageIDs
-    priority_queue = {1, 13, 14, 16, 20, 25, 29, 30, 31, 34, 37, 40}
+    priority_queue = {1, 6, 13, 14, 16, 20, 25, 29, 30, 31, 34, 37, 40}
     first_pkg = None
     priority = []
     normal = []
 
     # 15 has an earlier deadline of 9:00 and is therefore delivered first
     for p in pending:
+        if truck is truck1:
+            p.truck = 1
+        elif truck is truck2:
+            p.truck = 2
+        else:
+            p.truck = 3
         if p.ID == 15:
             first_pkg = p
         elif p.ID in priority_queue:
@@ -157,4 +164,4 @@ if __name__ == '__main__':
         for pid in ids:
             pkg = table.search(pid)
             pkg.update_status(moment)
-            print(pkg)
+            print(f"{pkg} | Truck: {pkg.truck}")
